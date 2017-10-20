@@ -37,9 +37,9 @@
     </description>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/sling/trunk/bundles/extensions/webconsolesecurityprovider</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/sling/trunk/bundles/extensions/webconsolesecurityprovider</developerConnection>
-        <url>http://svn.apache.org/viewvc/sling/trunk/bundles/extensions/webconsolesecurityprovider</url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-extensions-webconsolesecurityprovider.git</conncetion>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-extensions-webconsolesecurityprovider.git</developerConnection>
+        <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-extensions-webconsolesecurityprovider.git</url>
     </scm>
 
     <properties>
