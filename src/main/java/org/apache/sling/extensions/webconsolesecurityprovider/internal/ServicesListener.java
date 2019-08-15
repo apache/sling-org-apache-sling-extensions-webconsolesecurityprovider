@@ -136,6 +136,7 @@ public class ServicesListener {
         props.put(Constants.SERVICE_PID, SlingWebConsoleSecurityProvider.class.getName());
         props.put(Constants.SERVICE_DESCRIPTION, "Apache Sling Web Console Security Provider 2");
         props.put(Constants.SERVICE_VENDOR, "The Apache Software Foundation");
+        props.put("webconsole.security.provider.id", "org.apache.sling.extensions.webconsolesecurityprovider2");
         this.provider2Reg = this.bundleContext.registerService(
             new String[] {ManagedService.class.getName(), WebConsoleSecurityProvider.class.getName()},
                           new SlingWebConsoleSecurityProvider2(authSupport, authenticator), props);
@@ -147,6 +148,7 @@ public class ServicesListener {
         props.put(Constants.SERVICE_PID, SlingWebConsoleSecurityProvider.class.getName());
         props.put(Constants.SERVICE_DESCRIPTION, "Apache Sling Web Console Security Provider");
         props.put(Constants.SERVICE_VENDOR, "The Apache Software Foundation");
+        props.put("webconsole.security.provider.id", "org.apache.sling.extensions.webconsolesecurityprovider");
         this.providerReg = this.bundleContext.registerService(
             new String[] {ManagedService.class.getName(), WebConsoleSecurityProvider.class.getName()}, new SlingWebConsoleSecurityProvider(repository), props);
         this.registrationState = State.PROVIDER;
