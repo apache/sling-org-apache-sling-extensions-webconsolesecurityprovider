@@ -122,15 +122,16 @@ public class ServiceListenerTest {
         assertTrue("Expected to have SlingAuth registered",getSecurityProvider() instanceof SlingWebConsoleSecurityProvider2); 
     }
     
+    private void assertNoSecurityProviderRegistered () {
+        assertNull(getSecurityProvider());
+    }
+    
     private WebConsoleSecurityProvider getSecurityProvider() {
         return context.getService(WebConsoleSecurityProvider.class);
     }
     
   
-    private void assertNoSecurityProviderRegistered () {
-        Object registeredSecurityProvider = context.getService(WebConsoleSecurityProvider.class);
-        assertNull(registeredSecurityProvider);
-    }
+
     
     
     
