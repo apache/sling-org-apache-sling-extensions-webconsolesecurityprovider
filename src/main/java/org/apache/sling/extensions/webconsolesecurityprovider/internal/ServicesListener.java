@@ -41,6 +41,8 @@ public class ServicesListener {
     private static final String AUTH_SUPPORT_CLASS = "org.apache.sling.auth.core.AuthenticationSupport";
     private static final String AUTHENTICATOR_CLASS = "org.apache.sling.api.auth.Authenticator";
     private static final String REPO_CLASS = "javax.jcr.Repository";
+    
+    public static final String WEBCONSOLE_FORCE_AUTH_AGAINST_JCR = "webconsole.forceJCRAuthentication";
 
     /** The bundle context. */
     private final BundleContext bundleContext;
@@ -68,6 +70,8 @@ public class ServicesListener {
 
     /** The registration for the provider2 */
     private ServiceRegistration<?> provider2Reg;
+    
+    boolean forceJcrAuth;
 
     /**
      * Start listeners
@@ -80,6 +84,7 @@ public class ServicesListener {
         this.authSupportListener.start();
         this.repositoryListener.start();
         this.authListener.start();
+        forceJcrAuth = System.getProperty(WEBCONSOLE_FORCE_AUTH_AGAINST_JCR) != null;
     }
 
     /**
@@ -87,18 +92,19 @@ public class ServicesListener {
      */
     public synchronized void notifyChange() {
         // check if all services are available
+        
         final Object authSupport = this.authSupportListener.getService();
         final Object authenticator = this.authListener.getService();
         final boolean hasAuthServices = authSupport != null && authenticator != null;
         final Object repository = this.repositoryListener.getService();
         if ( registrationState == State.NONE ) {
-            if ( hasAuthServices ) {
+            if ( hasAuthServices && !forceJcrAuth ) {
                 registerProvider2(authSupport, authenticator);
             } else if ( repository != null ) {
                 registerProvider(repository);
             }
         } else if ( registrationState == State.PROVIDER ) {
-            if ( hasAuthServices ) {
+            if ( hasAuthServices && !forceJcrAuth ) {
                 registerProvider2(authSupport, authenticator);
                 unregisterProvider();
             } else if ( repository == null ) {
