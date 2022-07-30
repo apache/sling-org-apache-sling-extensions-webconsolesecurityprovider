@@ -34,7 +34,13 @@ import org.osgi.service.cm.ManagedService;
 
 /**
  * The <code>ServicesListener</code> listens for the required services
- * and registers the security provider when required services are available
+ * and registers the security provider when required services are available.
+ *
+ * It supports 2 modes, which can be forced by the value of the framework property "sling.webconsole.authType"
+ * <ul>
+ *   <li> "jcrAuth": always authenticate against the JCR repository even if Sling Authentication is possible.</li>
+ *   <li> "slingAuth" (default): Use SlingAuthentication if possible. Fallback to JCR. 
+ * </ul>
  */
 public class ServicesListener {
 
@@ -42,7 +48,9 @@ public class ServicesListener {
     private static final String AUTHENTICATOR_CLASS = "org.apache.sling.api.auth.Authenticator";
     private static final String REPO_CLASS = "javax.jcr.Repository";
     
-    public static final String WEBCONSOLE_FORCE_AUTH_AGAINST_JCR = "webconsole.forceJCRAuthentication";
+    protected static final String WEBCONSOLE_FORCE_AUTH_AGAINST_JCR = "sling.webconsole.authType";
+    protected static final String JCR_AUTH = "jcrAuth";
+    protected static final String SLING_AUTH = "slingAuth";
 
     /** The bundle context. */
     private final BundleContext bundleContext;
@@ -71,7 +79,7 @@ public class ServicesListener {
     /** The registration for the provider2 */
     private ServiceRegistration<?> provider2Reg;
     
-    boolean forceJcrAuth;
+    String authType = SLING_AUTH;
 
     /**
      * Start listeners
@@ -84,7 +92,9 @@ public class ServicesListener {
         this.authSupportListener.start();
         this.repositoryListener.start();
         this.authListener.start();
-        forceJcrAuth = bundleContext.getProperty(WEBCONSOLE_FORCE_AUTH_AGAINST_JCR) != null;
+        if (bundleContext.getProperty(WEBCONSOLE_FORCE_AUTH_AGAINST_JCR) != null) {
+            authType = bundleContext.getProperty(WEBCONSOLE_FORCE_AUTH_AGAINST_JCR);
+        }
     }
 
     /**
@@ -97,6 +107,7 @@ public class ServicesListener {
         final Object authenticator = this.authListener.getService();
         final boolean hasAuthServices = authSupport != null && authenticator != null;
         final Object repository = this.repositoryListener.getService();
+        boolean forceJcrAuth = authType.equals(JCR_AUTH);
         if ( registrationState == State.NONE ) {
             if ( hasAuthServices && !forceJcrAuth ) {
                 registerProvider2(authSupport, authenticator);

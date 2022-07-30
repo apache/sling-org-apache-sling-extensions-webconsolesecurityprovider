@@ -1,4 +1,4 @@
-package org.apache.sling.extensions.webconsolesecurityprovider;
+package org.apache.sling.extensions.webconsolesecurityprovider.internal;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -90,7 +90,7 @@ public class ServiceListenerTest {
     @Test
     public void testWithForcedJcrAuth() {
         try {
-            System.setProperty(ServicesListener.WEBCONSOLE_FORCE_AUTH_AGAINST_JCR, "true");
+            System.setProperty(ServicesListener.WEBCONSOLE_FORCE_AUTH_AGAINST_JCR, ServicesListener.JCR_AUTH);
             listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
             assertNoSecurityProviderRegistered();
             
