@@ -84,7 +84,7 @@ public class ServicesListener {
         this.authSupportListener.start();
         this.repositoryListener.start();
         this.authListener.start();
-        forceJcrAuth = System.getProperty(WEBCONSOLE_FORCE_AUTH_AGAINST_JCR) != null;
+        forceJcrAuth = bundleContext.getProperty(WEBCONSOLE_FORCE_AUTH_AGAINST_JCR) != null;
     }
 
     /**

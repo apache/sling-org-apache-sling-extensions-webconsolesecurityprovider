@@ -35,7 +35,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.osgi.framework.BundleContext;
 
 public class ServiceListenerTest {
 
@@ -69,7 +71,7 @@ public class ServiceListenerTest {
     
     @Test
     public void testWithSlingAuth() {
-        listener = new ServicesListener(context.bundleContext());
+        listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
         assertNoSecurityProviderRegistered();
         
         context.registerService(Repository.class,repository);
@@ -89,7 +91,7 @@ public class ServiceListenerTest {
     public void testWithForcedJcrAuth() {
         try {
             System.setProperty(ServicesListener.WEBCONSOLE_FORCE_AUTH_AGAINST_JCR, "true");
-            listener = new ServicesListener(context.bundleContext());
+            listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
             assertNoSecurityProviderRegistered();
             
             // no matter what is registered, always the auth against the repo needs to be there
@@ -110,8 +112,16 @@ public class ServiceListenerTest {
         }
     }
     
-    
-    
+    // until https://issues.apache.org/jira/browse/SLING-11505 is implemented
+    private BundleContext wrapForValidProperties(BundleContext bc) {
+        BundleContext spy = Mockito.spy(bc);
+        Mockito.when(spy.getProperty(Mockito.anyString())).thenAnswer(invocation -> {
+            String key = (String) invocation.getArguments()[0];
+            return System.getProperty(key);
+        });
+        return spy;
+    }
+
     // Helpers
     
     private void assertRepositoryRegistered() { 
