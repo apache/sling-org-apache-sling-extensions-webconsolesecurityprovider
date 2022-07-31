@@ -150,35 +150,35 @@ public class ServicesListener {
         final State targetState = this.getTargetState(authSupport != null && authenticator != null, repository != null);
         if ( this.registrationState != targetState ) {
             if ( targetState != State.PROVIDER_JCR ) {
-                this.unregisterProvider();
+                this.unregisterProviderJcr();
             } 
             if ( targetState != State.PROVIDER_SLING ) {
-                this.unregisterProvider2();
+                this.unregisterProviderSling();
             }
             if ( targetState == State.PROVIDER_JCR ) {
-                this.registerProvider(repository);
+                this.registerProviderJcr(repository);
             } else if ( targetState == State.PROVIDER_SLING ) {
-                this.registerProvider2(authSupport, authenticator);
+                this.registerProviderSling(authSupport, authenticator);
             }
             this.registrationState = targetState;
         }
     }
 
-    private void unregisterProvider2() {
+    private void unregisterProviderSling() {
         if ( this.provider2Reg != null ) {
             this.provider2Reg.unregister();
             this.provider2Reg = null;
         }
     }
 
-    private void unregisterProvider() {
+    private void unregisterProviderJcr() {
         if ( this.providerReg != null ) {
             this.providerReg.unregister();
             this.providerReg = null;
         }
     }
 
-    private void registerProvider2(final Object authSupport, final Object authenticator) {
+    private void registerProviderSling(final Object authSupport, final Object authenticator) {
         final Dictionary<String, Object> props = new Hashtable<String, Object>();
         props.put(Constants.SERVICE_PID, SlingWebConsoleSecurityProvider.class.getName());
         props.put(Constants.SERVICE_DESCRIPTION, "Apache Sling Web Console Security Provider 2");
@@ -189,7 +189,7 @@ public class ServicesListener {
                           new SlingWebConsoleSecurityProvider2(authSupport, authenticator), props);
     }
 
-    private void registerProvider(final Object repository) {
+    private void registerProviderJcr(final Object repository) {
         final Dictionary<String, Object> props = new Hashtable<String, Object>();
         props.put(Constants.SERVICE_PID, SlingWebConsoleSecurityProvider.class.getName());
         props.put(Constants.SERVICE_DESCRIPTION, "Apache Sling Web Console Security Provider");
@@ -206,8 +206,8 @@ public class ServicesListener {
         this.repositoryListener.deactivate();
         this.authSupportListener.deactivate();
         this.authListener.deactivate();
-        this.unregisterProvider();
-        this.unregisterProvider2();
+        this.unregisterProviderJcr();
+        this.unregisterProviderSling();
     }
 
     /**
