@@ -18,6 +18,7 @@ package org.apache.sling.extensions.webconsolesecurityprovider.internal;
  * under the License.
  */
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -26,9 +27,6 @@ import javax.jcr.Repository;
 import org.apache.felix.webconsole.WebConsoleSecurityProvider;
 import org.apache.sling.api.auth.Authenticator;
 import org.apache.sling.auth.core.AuthenticationSupport;
-import org.apache.sling.extensions.webconsolesecurityprovider.internal.ServicesListener;
-import org.apache.sling.extensions.webconsolesecurityprovider.internal.SlingWebConsoleSecurityProvider;
-import org.apache.sling.extensions.webconsolesecurityprovider.internal.SlingWebConsoleSecurityProvider2;
 import org.apache.sling.testing.mock.osgi.junit.OsgiContext;
 import org.junit.After;
 import org.junit.Before;
@@ -67,10 +65,8 @@ public class ServiceListenerTest {
         listener.deactivate();
     }
     
-    
-    
     @Test
-    public void testWithSlingAuth() {
+    public void testDefaultAuth() {
         listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
         assertNoSecurityProviderRegistered();
         
@@ -88,9 +84,32 @@ public class ServiceListenerTest {
     }
     
     @Test
+    public void testWithSlingAuth() {
+        try {
+            System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.SLING_AUTH);
+            listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
+            assertNoSecurityProviderRegistered();
+            
+            context.registerService(Repository.class,repository);
+            listener.notifyChange();
+            assertNoSecurityProviderRegistered();
+
+            context.registerService(AuthenticationSupport.class, authenticationSupport);
+            listener.notifyChange();
+            assertNoSecurityProviderRegistered();
+            
+            context.registerService(Authenticator.class, authenticator);
+            listener.notifyChange();
+            assertSlingAuthRegistered();
+        } finally {
+            System.getProperties().remove(ServicesListener.WEBCONSOLE_AUTH_TYPE);
+        }
+    }
+
+    @Test
     public void testWithForcedJcrAuth() {
         try {
-            System.setProperty(ServicesListener.WEBCONSOLE_FORCE_AUTH_AGAINST_JCR, ServicesListener.JCR_AUTH);
+            System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.JCR_AUTH);
             listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
             assertNoSecurityProviderRegistered();
             
@@ -108,10 +127,59 @@ public class ServiceListenerTest {
             listener.notifyChange();
             assertRepositoryRegistered();
         } finally {
-            System.getProperties().remove(ServicesListener.WEBCONSOLE_FORCE_AUTH_AGAINST_JCR);
+            System.getProperties().remove(ServicesListener.WEBCONSOLE_AUTH_TYPE);
         }
     }
-    
+
+    @Test
+    public void testGetAuthType() {
+        try {
+            listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
+            assertEquals(ServicesListener.AuthType.DEFAULT, listener.getAuthType());
+
+            System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.JCR_AUTH);
+            listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
+            assertEquals(ServicesListener.AuthType.JCR, listener.getAuthType());
+
+            System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.SLING_AUTH);
+            listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
+            assertEquals(ServicesListener.AuthType.SLING, listener.getAuthType());
+
+            System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, "invalid");
+            listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
+            assertEquals(ServicesListener.AuthType.DEFAULT, listener.getAuthType());
+        } finally {
+            System.getProperties().remove(ServicesListener.WEBCONSOLE_AUTH_TYPE);
+        }
+    }
+
+    @Test
+    public void testGetTargetState() {
+        try {
+            listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
+            assertEquals(ServicesListener.State.NONE, listener.getTargetState(false, false));
+            assertEquals(ServicesListener.State.PROVIDER_JCR, listener.getTargetState(false, true));
+            assertEquals(ServicesListener.State.PROVIDER_SLING, listener.getTargetState(true, false));
+            assertEquals(ServicesListener.State.PROVIDER_SLING, listener.getTargetState(true, true));
+
+            System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.JCR_AUTH);
+            listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
+            assertEquals(ServicesListener.State.NONE, listener.getTargetState(false, false));
+            assertEquals(ServicesListener.State.PROVIDER_JCR, listener.getTargetState(false, true));
+            assertEquals(ServicesListener.State.NONE, listener.getTargetState(true, false));
+            assertEquals(ServicesListener.State.PROVIDER_JCR, listener.getTargetState(true, true));
+
+            System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.SLING_AUTH);
+            listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
+            assertEquals(ServicesListener.State.NONE, listener.getTargetState(false, false));
+            assertEquals(ServicesListener.State.NONE, listener.getTargetState(false, true));
+            assertEquals(ServicesListener.State.PROVIDER_SLING, listener.getTargetState(true, false));
+            assertEquals(ServicesListener.State.PROVIDER_SLING, listener.getTargetState(true, true));
+        } finally {
+            System.getProperties().remove(ServicesListener.WEBCONSOLE_AUTH_TYPE);
+        }
+    }
+
     // until https://issues.apache.org/jira/browse/SLING-11505 is implemented
     private BundleContext wrapForValidProperties(BundleContext bc) {
         BundleContext spy = Mockito.spy(bc);
