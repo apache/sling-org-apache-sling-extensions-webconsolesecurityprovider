@@ -18,7 +18,6 @@ package org.apache.sling.extensions.webconsolesecurityprovider.internal;
  * under the License.
  */
 
-
 import java.util.Dictionary;
 import java.util.Hashtable;
 
@@ -31,16 +30,30 @@ import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.ManagedService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The <code>ServicesListener</code> listens for the required services
- * and registers the security provider when required services are available
+ * and registers the security provider when required services are available.
+ *
+ * It supports 3 modes, which can be forced by the value of the framework property "sling.webconsole.authType"
+ * <ul>
+ *   <li> "jcrAuth": always authenticate against the JCR repository even if Sling Authentication is possible.</li>
+ *   <li> "slingAuth": always use SlingAuthentication
+ *   <li> no value (default) : Use SlingAuthentication if available, fallback to JCR repository
+ *   <li> If an invalid value is specifed, the value is ignored and the default is used
+ * </ul>
  */
 public class ServicesListener {
 
     private static final String AUTH_SUPPORT_CLASS = "org.apache.sling.auth.core.AuthenticationSupport";
     private static final String AUTHENTICATOR_CLASS = "org.apache.sling.api.auth.Authenticator";
     private static final String REPO_CLASS = "javax.jcr.Repository";
+    
+    protected static final String WEBCONSOLE_AUTH_TYPE = "sling.webconsole.authType";
+    protected static final String JCR_AUTH = "jcrAuth";
+    protected static final String SLING_AUTH = "slingAuth";
 
     /** The bundle context. */
     private final BundleContext bundleContext;
@@ -54,10 +67,16 @@ public class ServicesListener {
     /** The listener for the authenticator. */
     private final Listener authListener;
 
-    private enum State {
+    enum State {
         NONE,
-        PROVIDER,
-        PROVIDER2
+        PROVIDER_JCR,
+        PROVIDER_SLING
+    }
+
+    enum AuthType {
+        DEFAULT,
+        JCR,
+        SLING
     }
 
     /** State */
@@ -68,12 +87,19 @@ public class ServicesListener {
 
     /** The registration for the provider2 */
     private ServiceRegistration<?> provider2Reg;
+    
+    /** Auth type */
+    final AuthType authType;
+
+    /** Logger */
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     /**
      * Start listeners
      */
     public ServicesListener(final BundleContext bundleContext) {
         this.bundleContext = bundleContext;
+        this.authType = getAuthType();
         this.authSupportListener = new Listener(AUTH_SUPPORT_CLASS);
         this.repositoryListener = new Listener(REPO_CLASS);
         this.authListener = new Listener(AUTHENTICATOR_CLASS);
@@ -82,56 +108,77 @@ public class ServicesListener {
         this.authListener.start();
     }
 
+    AuthType getAuthType() {
+        final String webConsoleAuthType = bundleContext.getProperty(WEBCONSOLE_AUTH_TYPE);
+        if ( webConsoleAuthType != null ) {
+            if ( webConsoleAuthType.equals(JCR_AUTH) ) {
+                return AuthType.JCR;
+            } else if ( webConsoleAuthType.equals(SLING_AUTH) ) {
+                return AuthType.SLING;
+            }
+            logger.error("Ignoring invalid auth type for webconsole security provider {}",  this.authType);
+        }
+        return AuthType.DEFAULT;
+    }
+
+    State getTargetState(final boolean slingAvailable, final boolean jcrAvailable) {
+        if ( !slingAvailable && !jcrAvailable ) {
+            return State.NONE;
+        }
+        if ( this.authType == AuthType.JCR && jcrAvailable ) {
+            return State.PROVIDER_JCR;
+        }
+        if ( this.authType == AuthType.SLING && slingAvailable ) {
+            return State.PROVIDER_SLING;
+        }
+        if ( this.authType == AuthType.DEFAULT ) {
+            return slingAvailable ? State.PROVIDER_SLING : State.PROVIDER_JCR;
+        }
+        return State.NONE;
+    }
+
     /**
      * Notify of service changes from the listeners.
      */
     public synchronized void notifyChange() {
         // check if all services are available
+        
         final Object authSupport = this.authSupportListener.getService();
         final Object authenticator = this.authListener.getService();
-        final boolean hasAuthServices = authSupport != null && authenticator != null;
         final Object repository = this.repositoryListener.getService();
-        if ( registrationState == State.NONE ) {
-            if ( hasAuthServices ) {
-                registerProvider2(authSupport, authenticator);
-            } else if ( repository != null ) {
-                registerProvider(repository);
+
+        final State targetState = this.getTargetState(authSupport != null && authenticator != null, repository != null);
+        if ( this.registrationState != targetState ) {
+            if ( targetState != State.PROVIDER_JCR ) {
+                this.unregisterProviderJcr();
+            } 
+            if ( targetState != State.PROVIDER_SLING ) {
+                this.unregisterProviderSling();
             }
-        } else if ( registrationState == State.PROVIDER ) {
-            if ( hasAuthServices ) {
-                registerProvider2(authSupport, authenticator);
-                unregisterProvider();
-            } else if ( repository == null ) {
-                unregisterProvider();
-                this.registrationState = State.NONE;
+            if ( targetState == State.PROVIDER_JCR ) {
+                this.registerProviderJcr(repository);
+            } else if ( targetState == State.PROVIDER_SLING ) {
+                this.registerProviderSling(authSupport, authenticator);
             }
-        } else {
-            if ( authSupport == null ) {
-                if ( repository != null ) {
-                    registerProvider(repository);
-                } else {
-                    this.registrationState = State.NONE;
-                }
-                unregisterProvider2();
-            }
+            this.registrationState = targetState;
         }
     }
 
-    private void unregisterProvider2() {
+    private void unregisterProviderSling() {
         if ( this.provider2Reg != null ) {
             this.provider2Reg.unregister();
             this.provider2Reg = null;
         }
     }
 
-    private void unregisterProvider() {
+    private void unregisterProviderJcr() {
         if ( this.providerReg != null ) {
             this.providerReg.unregister();
             this.providerReg = null;
         }
     }
 
-    private void registerProvider2(final Object authSupport, final Object authenticator) {
+    private void registerProviderSling(final Object authSupport, final Object authenticator) {
         final Dictionary<String, Object> props = new Hashtable<String, Object>();
         props.put(Constants.SERVICE_PID, SlingWebConsoleSecurityProvider.class.getName());
         props.put(Constants.SERVICE_DESCRIPTION, "Apache Sling Web Console Security Provider 2");
@@ -140,10 +187,9 @@ public class ServicesListener {
         this.provider2Reg = this.bundleContext.registerService(
             new String[] {ManagedService.class.getName(), WebConsoleSecurityProvider.class.getName()},
                           new SlingWebConsoleSecurityProvider2(authSupport, authenticator), props);
-        this.registrationState = State.PROVIDER2;
     }
 
-    private void registerProvider(final Object repository) {
+    private void registerProviderJcr(final Object repository) {
         final Dictionary<String, Object> props = new Hashtable<String, Object>();
         props.put(Constants.SERVICE_PID, SlingWebConsoleSecurityProvider.class.getName());
         props.put(Constants.SERVICE_DESCRIPTION, "Apache Sling Web Console Security Provider");
@@ -151,7 +197,6 @@ public class ServicesListener {
         props.put("webconsole.security.provider.id", "org.apache.sling.extensions.webconsolesecurityprovider");
         this.providerReg = this.bundleContext.registerService(
             new String[] {ManagedService.class.getName(), WebConsoleSecurityProvider.class.getName()}, new SlingWebConsoleSecurityProvider(repository), props);
-        this.registrationState = State.PROVIDER;
     }
 
     /**
@@ -161,8 +206,8 @@ public class ServicesListener {
         this.repositoryListener.deactivate();
         this.authSupportListener.deactivate();
         this.authListener.deactivate();
-        this.unregisterProvider();
-        this.unregisterProvider2();
+        this.unregisterProviderJcr();
+        this.unregisterProviderSling();
     }
 
     /**
