@@ -27,7 +27,7 @@
 
     <groupId>org.apache.sling</groupId>
     <artifactId>org.apache.sling.extensions.webconsolesecurityprovider</artifactId>
-    <version>1.2.5-SNAPSHOT</version>
+    <version>1.2.6</version>
 
     <name>Apache Sling Web Console Security Provider</name>
     <description>
@@ -39,7 +39,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-extensions-webconsolesecurityprovider.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-extensions-webconsolesecurityprovider.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-extensions-webconsolesecurityprovider.git</url>
-      <tag>HEAD</tag>
+      <tag>org.apache.sling.extensions.webconsolesecurityprovider-1.2.6</tag>
   </scm>
 
     <properties>
