@@ -109,11 +109,11 @@ public class ServicesListener {
     }
 
     AuthType getAuthType() {
-        final String authType = bundleContext.getProperty(WEBCONSOLE_AUTH_TYPE);
-        if ( authType != null ) {
-            if ( authType.equals(JCR_AUTH) ) {
+        final String webConsoleAuthType = bundleContext.getProperty(WEBCONSOLE_AUTH_TYPE);
+        if ( webConsoleAuthType != null ) {
+            if ( webConsoleAuthType.equals(JCR_AUTH) ) {
                 return AuthType.JCR;
-            } else if ( authType.equals(SLING_AUTH) ) {
+            } else if ( webConsoleAuthType.equals(SLING_AUTH) ) {
                 return AuthType.SLING;
             }
             logger.error("Ignoring invalid auth type for webconsole security provider {}",  this.authType);
