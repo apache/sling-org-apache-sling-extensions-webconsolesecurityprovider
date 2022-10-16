@@ -67,6 +67,9 @@ public class ServicesListener {
     /** The listener for the authenticator. */
     private final Listener authListener;
 
+    /** Shared lock object */
+    private final Object lock = new Object();
+
     enum State {
         NONE,
         PROVIDER_JCR,
@@ -140,27 +143,28 @@ public class ServicesListener {
     /**
      * Notify of service changes from the listeners.
      */
-    public synchronized void notifyChange() {
+    public void notifyChange() {
         // check if all services are available
-        
-        final Object authSupport = this.authSupportListener.getService();
-        final Object authenticator = this.authListener.getService();
-        final Object repository = this.repositoryListener.getService();
+        synchronized (lock) {
+            final Object authSupport = this.authSupportListener.getService();
+            final Object authenticator = this.authListener.getService();
+            final Object repository = this.repositoryListener.getService();
 
-        final State targetState = this.getTargetState(authSupport != null && authenticator != null, repository != null);
-        if ( this.registrationState != targetState ) {
-            if ( targetState != State.PROVIDER_JCR ) {
-                this.unregisterProviderJcr();
-            } 
-            if ( targetState != State.PROVIDER_SLING ) {
-                this.unregisterProviderSling();
+            final State targetState = this.getTargetState(authSupport != null && authenticator != null, repository != null);
+            if ( this.registrationState != targetState ) {
+                if ( targetState != State.PROVIDER_JCR ) {
+                    this.unregisterProviderJcr();
+                }
+                if ( targetState != State.PROVIDER_SLING ) {
+                    this.unregisterProviderSling();
+                }
+                if ( targetState == State.PROVIDER_JCR ) {
+                    this.registerProviderJcr(repository);
+                } else if ( targetState == State.PROVIDER_SLING ) {
+                    this.registerProviderSling(authSupport, authenticator);
+                }
+                this.registrationState = targetState;
             }
-            if ( targetState == State.PROVIDER_JCR ) {
-                this.registerProviderJcr(repository);
-            } else if ( targetState == State.PROVIDER_SLING ) {
-                this.registerProviderSling(authSupport, authenticator);
-            }
-            this.registrationState = targetState;
         }
     }
 
@@ -259,47 +263,53 @@ public class ServicesListener {
         /**
          * Return the service (if available)
          */
-        public synchronized Object getService() {
-            return this.service;
+        public Object getService() {
+            synchronized (lock) {
+                return this.service;
+            }
         }
 
         /**
          * Try to get the service and notify the change.
          */
-        private synchronized void retainService(final ServiceReference<?> ref) {
-            boolean hadService = this.service != null;
-            boolean getService = this.reference == null;
-            if ( !getService ) {
-                final int result = this.reference.compareTo(ref);
-                if ( result < 0 ) {
-                    bundleContext.ungetService(this.reference);
-                    this.service = null;
-                    getService = true;
+        private void retainService(final ServiceReference<?> ref) {
+            synchronized (lock) {
+                boolean hadService = this.service != null;
+                boolean getService = this.reference == null;
+                if ( !getService ) {
+                    final int result = this.reference.compareTo(ref);
+                    if ( result < 0 ) {
+                        bundleContext.ungetService(this.reference);
+                        this.service = null;
+                        getService = true;
+                    }
                 }
-            }
-            if ( getService ) {
-                this.reference = ref;
-                this.service = bundleContext.getService(this.reference);
-                if ( this.service == null ) {
-                    this.reference = null;
-                } else {
+                if ( getService ) {
+                    this.reference = ref;
+                    this.service = bundleContext.getService(this.reference);
+                    if ( this.service == null ) {
+                        this.reference = null;
+                    } else {
+                        notifyChange();
+                    }
+                }
+                if ( hadService && this.service == null ) {
                     notifyChange();
                 }
-            }
-            if ( hadService && this.service == null ) {
-                notifyChange();
             }
         }
 
         /**
          * Try to release the service and notify the change.
          */
-        private synchronized void releaseService(final ServiceReference<?> ref) {
-            if ( this.reference != null && this.reference.compareTo(ref) == 0) {
-                this.service = null;
-                bundleContext.ungetService(this.reference);
-                this.reference = null;
-                notifyChange();
+        private void releaseService(final ServiceReference<?> ref) {
+            synchronized (lock) {
+                if ( this.reference != null && this.reference.compareTo(ref) == 0) {
+                    this.service = null;
+                    bundleContext.ungetService(this.reference);
+                    this.reference = null;
+                    notifyChange();
+                }
             }
         }
 
