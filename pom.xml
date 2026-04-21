@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-    <!--
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
         Licensed to the Apache Software Foundation (ASF) under one or
         more contributor license agreements. See the NOTICE file
         distributed with this work for additional information regarding
@@ -19,54 +19,40 @@
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>sling-bundle-parent</artifactId>
         <groupId>org.apache.sling</groupId>
-        <version>48</version>
+        <artifactId>sling-bundle-parent</artifactId>
+        <version>66</version>
         <relativePath />
     </parent>
 
-    <groupId>org.apache.sling</groupId>
     <artifactId>org.apache.sling.extensions.webconsolesecurityprovider</artifactId>
     <version>1.2.9-SNAPSHOT</version>
 
     <name>Apache Sling Web Console Security Provider</name>
-    <description>
-        WebConsoleSecurityProvider for the Apache Felix Web Console using the
-        Apache Sling Auth Core bundle to authenticate users.
-    </description>
+    <description>WebConsoleSecurityProvider for the Apache Felix Web Console using the
+        Apache Sling Auth Core bundle to authenticate users.</description>
 
     <scm>
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-extensions-webconsolesecurityprovider.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-extensions-webconsolesecurityprovider.git</developerConnection>
-        <url>https://github.com/apache/sling-org-apache-sling-extensions-webconsolesecurityprovider.git</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+        <url>https://github.com/apache/sling-org-apache-sling-extensions-webconsolesecurityprovider/tree/${project.scm.tag}</url>
+    </scm>
 
     <properties>
         <site.jira.version.id>12315265</site.jira.version.id>
+        <sling.java.version>17</sling.java.version>
     </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 
     <dependencies>
         <dependency>
             <groupId>org.osgi</groupId>
-            <artifactId>osgi.core</artifactId>
+            <artifactId>org.osgi.framework</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.service.cm</artifactId>
-            <version>1.5.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -90,10 +76,12 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>javax.jcr</groupId>
             <artifactId>jcr</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.jackrabbit</groupId>
@@ -104,24 +92,46 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
         </dependency>
-        
+
         <dependency>
-        	<groupId>org.apache.sling</groupId>
-        	<artifactId>org.apache.sling.testing.osgi-mock.junit4</artifactId>
-        	<version>3.3.0</version>
-        	<scope>test</scope>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.resource</artifactId>
+            <scope>test</scope>
         </dependency>
-		<dependency>
-		    <groupId>junit</groupId>
-		    <artifactId>junit</artifactId>
-		    <scope>test</scope>
-		</dependency>
-		<dependency>
-		    <groupId>org.mockito</groupId>
-		    <artifactId>mockito-core</artifactId>
-		    <version>4.6.1</version>
-		    <scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>org.apache.sling.testing.osgi-mock.junit4</artifactId>
+            <version>3.3.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

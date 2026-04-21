@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.sling.extensions.webconsolesecurityprovider.internal;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -50,7 +68,7 @@ public class ServicesListener {
     private static final String AUTH_SUPPORT_CLASS = "org.apache.sling.auth.core.AuthenticationSupport";
     private static final String AUTHENTICATOR_CLASS = "org.apache.sling.api.auth.Authenticator";
     private static final String REPO_CLASS = "javax.jcr.Repository";
-    
+
     protected static final String WEBCONSOLE_AUTH_TYPE = "sling.webconsole.authType";
     protected static final String JCR_AUTH = "jcrAuth";
     protected static final String SLING_AUTH = "slingAuth";
@@ -90,7 +108,7 @@ public class ServicesListener {
 
     /** The registration for the provider2 */
     private ServiceRegistration<?> provider2Reg;
-    
+
     /** Auth type */
     final AuthType authType;
 
@@ -113,28 +131,28 @@ public class ServicesListener {
 
     AuthType getAuthType() {
         final String webConsoleAuthType = bundleContext.getProperty(WEBCONSOLE_AUTH_TYPE);
-        if ( webConsoleAuthType != null ) {
-            if ( webConsoleAuthType.equals(JCR_AUTH) ) {
+        if (webConsoleAuthType != null) {
+            if (webConsoleAuthType.equals(JCR_AUTH)) {
                 return AuthType.JCR;
-            } else if ( webConsoleAuthType.equals(SLING_AUTH) ) {
+            } else if (webConsoleAuthType.equals(SLING_AUTH)) {
                 return AuthType.SLING;
             }
-            logger.error("Ignoring invalid auth type for webconsole security provider {}",  this.authType);
+            logger.error("Ignoring invalid auth type for webconsole security provider {}", this.authType);
         }
         return AuthType.DEFAULT;
     }
 
     State getTargetState(final boolean slingAvailable, final boolean jcrAvailable) {
-        if ( !slingAvailable && !jcrAvailable ) {
+        if (!slingAvailable && !jcrAvailable) {
             return State.NONE;
         }
-        if ( this.authType == AuthType.JCR && jcrAvailable ) {
+        if (this.authType == AuthType.JCR && jcrAvailable) {
             return State.PROVIDER_JCR;
         }
-        if ( this.authType == AuthType.SLING && slingAvailable ) {
+        if (this.authType == AuthType.SLING && slingAvailable) {
             return State.PROVIDER_SLING;
         }
-        if ( this.authType == AuthType.DEFAULT ) {
+        if (this.authType == AuthType.DEFAULT) {
             return slingAvailable ? State.PROVIDER_SLING : State.PROVIDER_JCR;
         }
         return State.NONE;
@@ -150,17 +168,18 @@ public class ServicesListener {
             final Object authenticator = this.authListener.getService();
             final Object repository = this.repositoryListener.getService();
 
-            final State targetState = this.getTargetState(authSupport != null && authenticator != null, repository != null);
-            if ( this.registrationState != targetState ) {
-                if ( targetState != State.PROVIDER_JCR ) {
+            final State targetState =
+                    this.getTargetState(authSupport != null && authenticator != null, repository != null);
+            if (this.registrationState != targetState) {
+                if (targetState != State.PROVIDER_JCR) {
                     this.unregisterProviderJcr();
                 }
-                if ( targetState != State.PROVIDER_SLING ) {
+                if (targetState != State.PROVIDER_SLING) {
                     this.unregisterProviderSling();
                 }
-                if ( targetState == State.PROVIDER_JCR ) {
+                if (targetState == State.PROVIDER_JCR) {
                     this.registerProviderJcr(repository);
-                } else if ( targetState == State.PROVIDER_SLING ) {
+                } else if (targetState == State.PROVIDER_SLING) {
                     this.registerProviderSling(authSupport, authenticator);
                 }
                 this.registrationState = targetState;
@@ -169,14 +188,14 @@ public class ServicesListener {
     }
 
     private void unregisterProviderSling() {
-        if ( this.provider2Reg != null ) {
+        if (this.provider2Reg != null) {
             this.provider2Reg.unregister();
             this.provider2Reg = null;
         }
     }
 
     private void unregisterProviderJcr() {
-        if ( this.providerReg != null ) {
+        if (this.providerReg != null) {
             this.providerReg.unregister();
             this.providerReg = null;
         }
@@ -189,8 +208,9 @@ public class ServicesListener {
         props.put(Constants.SERVICE_VENDOR, "The Apache Software Foundation");
         props.put("webconsole.security.provider.id", "org.apache.sling.extensions.webconsolesecurityprovider2");
         this.provider2Reg = this.bundleContext.registerService(
-            new String[] {ManagedService.class.getName(), WebConsoleSecurityProvider.class.getName()},
-                          new SlingWebConsoleSecurityProvider2(authSupport, authenticator), props);
+                new String[] {ManagedService.class.getName(), WebConsoleSecurityProvider.class.getName()},
+                new SlingWebConsoleSecurityProvider2(authSupport, authenticator),
+                props);
     }
 
     private void registerProviderJcr(final Object repository) {
@@ -200,7 +220,9 @@ public class ServicesListener {
         props.put(Constants.SERVICE_VENDOR, "The Apache Software Foundation");
         props.put("webconsole.security.provider.id", "org.apache.sling.extensions.webconsolesecurityprovider");
         this.providerReg = this.bundleContext.registerService(
-            new String[] {ManagedService.class.getName(), WebConsoleSecurityProvider.class.getName()}, new SlingWebConsoleSecurityProvider(repository), props);
+                new String[] {ManagedService.class.getName(), WebConsoleSecurityProvider.class.getName()},
+                new SlingWebConsoleSecurityProvider(repository),
+                props);
     }
 
     /**
@@ -241,14 +263,13 @@ public class ServicesListener {
          */
         public void start() {
             try {
-                bundleContext.addServiceListener(this, "("
-                        + Constants.OBJECTCLASS + "=" + serviceName + ")");
+                bundleContext.addServiceListener(this, "(" + Constants.OBJECTCLASS + "=" + serviceName + ")");
             } catch (final InvalidSyntaxException ise) {
                 // this should really never happen
                 throw new RuntimeException("Unexpected exception occured.", ise);
             }
             final ServiceReference<?> ref = bundleContext.getServiceReference(serviceName);
-            if ( ref != null ) {
+            if (ref != null) {
                 this.retainService(ref);
             }
         }
@@ -276,24 +297,24 @@ public class ServicesListener {
             synchronized (lock) {
                 boolean hadService = this.service != null;
                 boolean getService = this.reference == null;
-                if ( !getService ) {
+                if (!getService) {
                     final int result = this.reference.compareTo(ref);
-                    if ( result < 0 ) {
+                    if (result < 0) {
                         bundleContext.ungetService(this.reference);
                         this.service = null;
                         getService = true;
                     }
                 }
-                if ( getService ) {
+                if (getService) {
                     this.reference = ref;
                     this.service = bundleContext.getService(this.reference);
-                    if ( this.service == null ) {
+                    if (this.service == null) {
                         this.reference = null;
                     } else {
                         notifyChange();
                     }
                 }
-                if ( hadService && this.service == null ) {
+                if (hadService && this.service == null) {
                     notifyChange();
                 }
             }
@@ -304,7 +325,7 @@ public class ServicesListener {
          */
         private void releaseService(final ServiceReference<?> ref) {
             synchronized (lock) {
-                if ( this.reference != null && this.reference.compareTo(ref) == 0) {
+                if (this.reference != null && this.reference.compareTo(ref) == 0) {
                     this.service = null;
                     bundleContext.ungetService(this.reference);
                     this.reference = null;
@@ -320,9 +341,9 @@ public class ServicesListener {
         public void serviceChanged(final ServiceEvent event) {
             if (event.getType() == ServiceEvent.REGISTERED) {
                 this.retainService(event.getServiceReference());
-            } else if ( event.getType() == ServiceEvent.UNREGISTERING ) {
+            } else if (event.getType() == ServiceEvent.UNREGISTERING) {
                 this.releaseService(event.getServiceReference());
-            } else if ( event.getType() == ServiceEvent.MODIFIED ) {
+            } else if (event.getType() == ServiceEvent.MODIFIED) {
                 notifyChange();
             }
         }

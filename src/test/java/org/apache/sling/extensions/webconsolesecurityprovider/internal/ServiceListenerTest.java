@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.sling.extensions.webconsolesecurityprovider.internal;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -18,10 +36,6 @@ package org.apache.sling.extensions.webconsolesecurityprovider.internal;
  * under the License.
  */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import javax.jcr.Repository;
 
 import org.apache.felix.webconsole.WebConsoleSecurityProvider;
@@ -37,67 +51,69 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.osgi.framework.BundleContext;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 public class ServiceListenerTest {
 
     @Rule
     public OsgiContext context = new OsgiContext();
-    
+
     @Mock
     Repository repository;
-    
+
     @Mock
     AuthenticationSupport authenticationSupport;
-    
+
     @Mock
     Authenticator authenticator;
-    
-    
+
     ServicesListener listener;
-    
+
     @Before
     public void setup() {
         MockitoAnnotations.openMocks(this);
-
     }
-    
+
     @After
     public void shutdown() {
         listener.deactivate();
     }
-    
+
     @Test
     public void testDefaultAuth() {
         listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
         assertNoSecurityProviderRegistered();
-        
-        context.registerService(Repository.class,repository);
+
+        context.registerService(Repository.class, repository);
         listener.notifyChange();
         assertRepositoryRegistered();
 
         context.registerService(AuthenticationSupport.class, authenticationSupport);
         listener.notifyChange();
         assertRepositoryRegistered();
-        
+
         context.registerService(Authenticator.class, authenticator);
         listener.notifyChange();
         assertSlingAuthRegistered();
     }
-    
+
     @Test
     public void testWithSlingAuth() {
         try {
             System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.SLING_AUTH);
             listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
             assertNoSecurityProviderRegistered();
-            
-            context.registerService(Repository.class,repository);
+
+            context.registerService(Repository.class, repository);
             listener.notifyChange();
             assertNoSecurityProviderRegistered();
 
             context.registerService(AuthenticationSupport.class, authenticationSupport);
             listener.notifyChange();
             assertNoSecurityProviderRegistered();
-            
+
             context.registerService(Authenticator.class, authenticator);
             listener.notifyChange();
             assertSlingAuthRegistered();
@@ -112,17 +128,17 @@ public class ServiceListenerTest {
             System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.JCR_AUTH);
             listener = new ServicesListener(wrapForValidProperties(context.bundleContext()));
             assertNoSecurityProviderRegistered();
-            
+
             // no matter what is registered, always the auth against the repo needs to be there
-            
-            context.registerService(Repository.class,repository);
+
+            context.registerService(Repository.class, repository);
             listener.notifyChange();
             assertRepositoryRegistered();
-    
+
             context.registerService(AuthenticationSupport.class, authenticationSupport);
             listener.notifyChange();
             assertRepositoryRegistered();
-            
+
             context.registerService(Authenticator.class, authenticator);
             listener.notifyChange();
             assertRepositoryRegistered();
@@ -191,26 +207,24 @@ public class ServiceListenerTest {
     }
 
     // Helpers
-    
-    private void assertRepositoryRegistered() { 
-        assertTrue("Expected to have the repository registered",getSecurityProvider() instanceof SlingWebConsoleSecurityProvider);
+
+    private void assertRepositoryRegistered() {
+        assertTrue(
+                "Expected to have the repository registered",
+                getSecurityProvider() instanceof SlingWebConsoleSecurityProvider);
     }
-    
+
     private void assertSlingAuthRegistered() {
-        assertTrue("Expected to have SlingAuth registered",getSecurityProvider() instanceof SlingWebConsoleSecurityProvider2); 
+        assertTrue(
+                "Expected to have SlingAuth registered",
+                getSecurityProvider() instanceof SlingWebConsoleSecurityProvider2);
     }
-    
-    private void assertNoSecurityProviderRegistered () {
+
+    private void assertNoSecurityProviderRegistered() {
         assertNull(getSecurityProvider());
     }
-    
+
     private WebConsoleSecurityProvider getSecurityProvider() {
         return context.getService(WebConsoleSecurityProvider.class);
     }
-    
-  
-
-    
-    
-    
 }

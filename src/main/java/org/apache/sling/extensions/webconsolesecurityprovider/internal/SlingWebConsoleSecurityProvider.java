@@ -18,13 +18,13 @@
  */
 package org.apache.sling.extensions.webconsolesecurityprovider.internal;
 
-import java.util.Iterator;
-
 import javax.jcr.Credentials;
 import javax.jcr.LoginException;
 import javax.jcr.Repository;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
+
+import java.util.Iterator;
 
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
@@ -49,7 +49,7 @@ public class SlingWebConsoleSecurityProvider extends AbstractWebConsoleSecurityP
     private Repository repository;
 
     public SlingWebConsoleSecurityProvider(final Object repository) {
-        this.repository = (Repository)repository;
+        this.repository = (Repository) repository;
     }
 
     // ---------- SCR integration
@@ -83,8 +83,8 @@ public class SlingWebConsoleSecurityProvider extends AbstractWebConsoleSecurityP
      */
     @Override
     public Object authenticate(String userName, String password) {
-        final Credentials creds = new SimpleCredentials(userName,
-            (password == null) ? new char[0] : password.toCharArray());
+        final Credentials creds =
+                new SimpleCredentials(userName, (password == null) ? new char[0] : password.toCharArray());
         Session session = null;
         try {
             session = repository.login(creds);
@@ -107,28 +107,25 @@ public class SlingWebConsoleSecurityProvider extends AbstractWebConsoleSecurityP
                         }
                     }
 
-                    logger.debug(
-                        "authenticate: User {} is denied Web Console access",
-                        userName);
+                    logger.debug("authenticate: User {} is denied Web Console access", userName);
                 } else {
-                    logger.error(
-                        "authenticate: Expected user ID {} to refer to a user",
-                        userId);
+                    logger.error("authenticate: Expected user ID {} to refer to a user", userId);
                 }
             } else {
                 logger.info(
-                    "authenticate: Jackrabbit Session required to grant access to the Web Console for {}; got {}",
-                    userName, session.getClass());
+                        "authenticate: Jackrabbit Session required to grant access to the Web Console for {}; got {}",
+                        userName,
+                        session.getClass());
             }
         } catch (final LoginException re) {
             logger.info(
-                "authenticate: User "
-                    + userName
-                    + " failed to authenticate with the repository for Web Console access",
-                re);
+                    "authenticate: User "
+                            + userName
+                            + " failed to authenticate with the repository for Web Console access",
+                    re);
         } catch (final Exception re) {
-            logger.info("authenticate: Generic problem trying grant User "
-                + userName + " access to the Web Console", re);
+            logger.info(
+                    "authenticate: Generic problem trying grant User " + userName + " access to the Web Console", re);
         } finally {
             if (session != null) {
                 session.logout();

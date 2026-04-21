@@ -18,12 +18,12 @@
  */
 package org.apache.sling.extensions.webconsolesecurityprovider.internal;
 
-import java.util.Iterator;
-
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import java.util.Iterator;
 
 import org.apache.felix.webconsole.WebConsoleSecurityProvider3;
 import org.apache.jackrabbit.api.JackrabbitSession;
@@ -47,43 +47,40 @@ import org.apache.sling.auth.core.AuthenticationSupport;
  * only registered as a security provider service once such a JCR Repository is
  * available.
  */
-public class SlingWebConsoleSecurityProvider2
-    extends AbstractWebConsoleSecurityProvider
-    implements WebConsoleSecurityProvider3 {
+public class SlingWebConsoleSecurityProvider2 extends AbstractWebConsoleSecurityProvider
+        implements WebConsoleSecurityProvider3 {
 
     private final AuthenticationSupport authentiationSupport;
 
     private final Authenticator authenticator;
 
     public SlingWebConsoleSecurityProvider2(final Object support, final Object authenticator) {
-        this.authentiationSupport = (AuthenticationSupport)support;
-        this.authenticator = (Authenticator)authenticator;
+        this.authentiationSupport = (AuthenticationSupport) support;
+        this.authenticator = (Authenticator) authenticator;
     }
 
     /**
      * @see org.apache.felix.webconsole.WebConsoleSecurityProvider2#authenticate(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
-    public boolean authenticate(final HttpServletRequest request,
-            final HttpServletResponse response) {
-        if ( this.authentiationSupport.handleSecurity(request, response) ) {
+    public boolean authenticate(final HttpServletRequest request, final HttpServletResponse response) {
+        if (this.authentiationSupport.handleSecurity(request, response)) {
             // get ResourceResolver (set by AuthenticationSupport)
             Object resolverObject = request.getAttribute(AuthenticationSupport.REQUEST_ATTRIBUTE_RESOLVER);
-            final ResourceResolver resolver = (resolverObject instanceof ResourceResolver)
-                    ? (ResourceResolver) resolverObject
-                    : null;
-            if ( resolver != null ) {
+            final ResourceResolver resolver =
+                    (resolverObject instanceof ResourceResolver) ? (ResourceResolver) resolverObject : null;
+            if (resolver != null) {
                 final Session session = resolver.adaptTo(Session.class);
-                if ( session != null ) {
+                if (session != null) {
                     try {
                         final User u = this.authenticate(session);
-                        if ( u != null ) {
+                        if (u != null) {
                             request.setAttribute(USER_ATTRIBUTE, u);
                             return true;
                         }
                     } catch (final Exception re) {
-                        logger.info("authenticate: Generic problem trying grant User "
-                            + " access to the Web Console", re);
+                        logger.info(
+                                "authenticate: Generic problem trying grant User " + " access to the Web Console", re);
                     }
                 }
             }
@@ -113,29 +110,26 @@ public class SlingWebConsoleSecurityProvider2
 
                 // check users
                 if (users.contains(userId)) {
-                    return (User)a;
+                    return (User) a;
                 }
 
                 // check groups
                 Iterator<Group> gi = a.memberOf();
                 while (gi.hasNext()) {
                     if (groups.contains(gi.next().getID())) {
-                        return (User)a;
+                        return (User) a;
                     }
                 }
 
-                logger.info(
-                    "authenticate: User {} is denied Web Console access",
-                    userId);
+                logger.info("authenticate: User {} is denied Web Console access", userId);
             } else {
-                logger.error(
-                    "authenticate: Expected user ID {} to refer to a user",
-                    userId);
+                logger.error("authenticate: Expected user ID {} to refer to a user", userId);
             }
         } else {
             logger.info(
-                "authenticate: Jackrabbit Session required to grant access to the Web Console for {}; got {}",
-                userId, session.getClass());
+                    "authenticate: Jackrabbit Session required to grant access to the Web Console for {}; got {}",
+                    userId,
+                    session.getClass());
         }
         return null;
     }

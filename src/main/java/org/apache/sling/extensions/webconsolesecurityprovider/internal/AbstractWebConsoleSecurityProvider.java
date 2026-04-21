@@ -34,8 +34,7 @@ import org.slf4j.LoggerFactory;
  * This is the common base class for the two provider implementations.
  * It handles the configuration of the service.
  */
-public abstract class AbstractWebConsoleSecurityProvider
-    implements WebConsoleSecurityProvider, ManagedService {
+public abstract class AbstractWebConsoleSecurityProvider implements WebConsoleSecurityProvider, ManagedService {
 
     // name of the property providing list of authorized users
     private static final String PROP_USERS = "users";
@@ -59,8 +58,7 @@ public abstract class AbstractWebConsoleSecurityProvider
      * @see org.osgi.service.cm.ManagedService#updated(java.util.Dictionary)
      */
     @Override
-    public void updated(final Dictionary<String, ?> properties)
-            throws ConfigurationException {
+    public void updated(final Dictionary<String, ?> properties) throws ConfigurationException {
         this.users = toSet(properties == null ? null : properties.get(PROP_USERS), PROP_GROUPS_DEFAULT_USER);
         this.groups = toSet(properties == null ? null : properties.get(PROP_GROUPS), null);
     }
