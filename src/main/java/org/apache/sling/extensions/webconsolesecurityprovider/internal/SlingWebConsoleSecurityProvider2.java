@@ -20,12 +20,14 @@ package org.apache.sling.extensions.webconsolesecurityprovider.internal;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import java.util.Dictionary;
 import java.util.Iterator;
+import java.util.Set;
 
-import org.apache.felix.webconsole.WebConsoleSecurityProvider3;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.apache.felix.webconsole.spi.SecurityProvider;
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
@@ -34,6 +36,19 @@ import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.sling.api.auth.Authenticator;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.auth.core.AuthenticationSupport;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.osgi.service.cm.ConfigurationException;
+import org.osgi.service.cm.ManagedService;
+import org.osgi.util.converter.Converter;
+import org.osgi.util.converter.Converters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.sling.extensions.webconsolesecurityprovider.internal.ConfigConstants.PROP_DEFAULT_GROUPS;
+import static org.apache.sling.extensions.webconsolesecurityprovider.internal.ConfigConstants.PROP_DEFAULT_USERS;
+import static org.apache.sling.extensions.webconsolesecurityprovider.internal.ConfigConstants.PROP_GROUPS;
+import static org.apache.sling.extensions.webconsolesecurityprovider.internal.ConfigConstants.PROP_USERS;
 
 /**
  * The <code>SlingWebConsoleSecurityProvider</code> is security provider for the
@@ -47,77 +62,103 @@ import org.apache.sling.auth.core.AuthenticationSupport;
  * only registered as a security provider service once such a JCR Repository is
  * available.
  */
-public class SlingWebConsoleSecurityProvider2 extends AbstractWebConsoleSecurityProvider
-        implements WebConsoleSecurityProvider3 {
+public class SlingWebConsoleSecurityProvider2 implements SecurityProvider, ManagedService {
+
+    /** default logger */
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+    protected Set<String> users = PROP_DEFAULT_USERS;
+    protected Set<String> groups = PROP_DEFAULT_GROUPS;
 
     private final AuthenticationSupport authentiationSupport;
 
     private final Authenticator authenticator;
 
-    public SlingWebConsoleSecurityProvider2(final Object support, final Object authenticator) {
+    public SlingWebConsoleSecurityProvider2(@NotNull final Object support, @NotNull final Object authenticator) {
         this.authentiationSupport = (AuthenticationSupport) support;
         this.authenticator = (Authenticator) authenticator;
     }
 
     /**
-     * @see org.apache.felix.webconsole.WebConsoleSecurityProvider2#authenticate(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+     * Handle configuration
+     * @see org.osgi.service.cm.ManagedService#updated(java.util.Dictionary)
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public void updated(@Nullable Dictionary<String, ?> properties) throws ConfigurationException {
+        final Converter converter = Converters.standardConverter();
+        this.users = converter
+                .convert(properties == null ? null : properties.get(PROP_USERS))
+                .defaultValue(PROP_DEFAULT_USERS)
+                .to(Set.class);
+        this.groups = converter
+                .convert(properties == null ? null : properties.get(PROP_GROUPS))
+                .defaultValue(PROP_DEFAULT_GROUPS)
+                .to(Set.class);
+    }
+
+    /**
+     * All users authenticated with the repository and being a member of the
+     * authorized groups are granted access for all roles in the Web Console.
      */
     @Override
-    public boolean authenticate(final HttpServletRequest request, final HttpServletResponse response) {
-        if (this.authentiationSupport.handleSecurity(request, response)) {
-            // get ResourceResolver (set by AuthenticationSupport)
-            Object resolverObject = request.getAttribute(AuthenticationSupport.REQUEST_ATTRIBUTE_RESOLVER);
-            final ResourceResolver resolver =
-                    (resolverObject instanceof ResourceResolver) ? (ResourceResolver) resolverObject : null;
-            if (resolver != null) {
-                final Session session = resolver.adaptTo(Session.class);
-                if (session != null) {
-                    try {
-                        final User u = this.authenticate(session);
-                        if (u != null) {
-                            request.setAttribute(USER_ATTRIBUTE, u);
-                            return true;
+    public boolean authorize(@NotNull Object user, @NotNull String role) {
+        logger.debug("authorize: Grant user {} access for role {}", user, role);
+        return true;
+    }
+
+    /**
+     * @see org.apache.felix.webconsole.spi.SecurityProvider#authenticate(jakarta.servlet.http.HttpServletRequest, jakarta.servlet.http.HttpServletResponse)
+     */
+    @Override
+    public @Nullable Object authenticate(
+            @NotNull final HttpServletRequest request, @NotNull final HttpServletResponse response) {
+        try {
+            if (this.authentiationSupport.handleSecurity(
+                    request, response)) { // TODO: should this call authenticationSupport#finishSecurity at the end?
+                // get ResourceResolver (set by AuthenticationSupport)
+                Object resolverObject = request.getAttribute(AuthenticationSupport.REQUEST_ATTRIBUTE_RESOLVER);
+                if (resolverObject instanceof ResourceResolver resolver) {
+                    final Session session = resolver.adaptTo(Session.class);
+                    if (session != null) {
+                        try {
+                            final User u = this.authenticate(session);
+                            if (u != null) {
+                                return u.getID();
+                            }
+                        } catch (final Exception re) {
+                            logger.info(
+                                    "authenticate: Generic problem trying grant User access to the Web Console", re);
                         }
-                    } catch (final Exception re) {
-                        logger.info(
-                                "authenticate: Generic problem trying grant User " + " access to the Web Console", re);
                     }
                 }
+                if (request.getAuthType() == null) {
+                    this.authenticator.login(request, response);
+                }
             }
-            if (request.getAuthType() == null) {
-                this.authenticator.login(request, response);
-            }
+        } finally {
+            this.authentiationSupport.finishSecurity(request, response);
         }
-        return false;
+        return null;
     }
 
-    @Override
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
-        this.authenticator.logout(request, response);
-    }
-
-    @Override
-    public User authenticate(String userName, String password) {
-        return null; // this method is never invoked
-    }
-
-    private User authenticate(final Session session) throws RepositoryException {
+    protected @Nullable User authenticate(@NotNull final Session session) throws RepositoryException {
         String userId = session.getUserID();
-        if (session instanceof JackrabbitSession) {
-            UserManager umgr = ((JackrabbitSession) session).getUserManager();
+        if (session instanceof JackrabbitSession jrSession) {
+            UserManager umgr = jrSession.getUserManager();
             Authorizable a = umgr.getAuthorizable(userId);
-            if (a instanceof User) {
+            if (a instanceof User u) {
 
                 // check users
                 if (users.contains(userId)) {
-                    return (User) a;
+                    return u;
                 }
 
                 // check groups
                 Iterator<Group> gi = a.memberOf();
                 while (gi.hasNext()) {
                     if (groups.contains(gi.next().getID())) {
-                        return (User) a;
+                        return u;
                     }
                 }
 
@@ -134,13 +175,8 @@ public class SlingWebConsoleSecurityProvider2 extends AbstractWebConsoleSecurity
         return null;
     }
 
-    /**
-     * All users authenticated with the repository and being a member of the
-     * authorized groups are granted access for all roles in the Web Console.
-     */
     @Override
-    public boolean authorize(Object user, String role) {
-        logger.debug("authorize: Grant user {} access for role {}", user, role);
-        return true;
+    public void logout(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
+        this.authenticator.logout(request, response);
     }
 }

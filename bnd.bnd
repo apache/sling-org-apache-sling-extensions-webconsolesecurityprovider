@@ -10,3 +10,7 @@ DynamicImport-Package:\
   org.apache.sling.api.auth;version="[1.0,2)",\
   org.apache.sling.api.resource;version="[2.3,3)",\
   org.apache.sling.auth.core;version="[1.0,2)"
+
+# make a copy of private classes that we need
+-includeresource:\
+  @org.apache.felix.webconsole-*.jar!/org/apache/felix/webconsole/internal/servlet/(BasicWebConsoleSecurityProvider*)

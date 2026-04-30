@@ -18,30 +18,24 @@
  */
 package org.apache.sling.extensions.webconsolesecurityprovider.internal;
 
-import org.jetbrains.annotations.NotNull;
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
+import java.util.Collections;
+import java.util.Set;
 
-public class Activator implements BundleActivator {
+/**
+ * This is the common constants for the two provider implementations.
+ */
+public interface ConfigConstants {
 
-    private ServicesListener listener;
+    // name of the property providing list of authorized users
+    static final String PROP_USERS = "users";
 
-    /**
-     * @see org.osgi.framework.BundleActivator#start(org.osgi.framework.BundleContext)
-     */
-    @Override
-    public void start(@NotNull final BundleContext context) throws Exception {
-        listener = new ServicesListener(context);
-    }
+    // default user being authorized
+    static final Set<String> PROP_DEFAULT_USERS = Set.of("admin");
 
-    /**
-     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
-     */
-    @Override
-    public void stop(@NotNull final BundleContext context) throws Exception {
-        if (listener != null) {
-            listener.deactivate();
-            listener = null;
-        }
-    }
+    // name of the property providing list of groups whose members are
+    // authorized
+    static final String PROP_GROUPS = "groups";
+
+    // default user being authorized
+    static final Set<String> PROP_DEFAULT_GROUPS = Collections.emptySet();
 }

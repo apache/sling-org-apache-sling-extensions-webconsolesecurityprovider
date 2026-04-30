@@ -24,13 +24,30 @@ import javax.jcr.Repository;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 
+import java.util.Dictionary;
 import java.util.Iterator;
+import java.util.Set;
 
+import org.apache.felix.webconsole.internal.servlet.BasicWebConsoleSecurityProvider;
 import org.apache.jackrabbit.api.JackrabbitSession;
 import org.apache.jackrabbit.api.security.user.Authorizable;
 import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.osgi.framework.BundleContext;
+import org.osgi.service.cm.ConfigurationException;
+import org.osgi.service.cm.ManagedService;
+import org.osgi.util.converter.Converter;
+import org.osgi.util.converter.Converters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.sling.extensions.webconsolesecurityprovider.internal.ConfigConstants.PROP_DEFAULT_GROUPS;
+import static org.apache.sling.extensions.webconsolesecurityprovider.internal.ConfigConstants.PROP_DEFAULT_USERS;
+import static org.apache.sling.extensions.webconsolesecurityprovider.internal.ConfigConstants.PROP_GROUPS;
+import static org.apache.sling.extensions.webconsolesecurityprovider.internal.ConfigConstants.PROP_USERS;
 
 /**
  * The <code>SlingWebConsoleSecurityProvider</code> is security provider for the
@@ -44,15 +61,39 @@ import org.apache.jackrabbit.api.security.user.UserManager;
  * only registered as a security provider service once such a JCR Repository is
  * available.
  */
-public class SlingWebConsoleSecurityProvider extends AbstractWebConsoleSecurityProvider {
+public class SlingWebConsoleSecurityProvider extends BasicWebConsoleSecurityProvider implements ManagedService {
+
+    /** default logger */
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+    protected Set<String> users = PROP_DEFAULT_USERS;
+    protected Set<String> groups = PROP_DEFAULT_GROUPS;
 
     private Repository repository;
 
-    public SlingWebConsoleSecurityProvider(final Object repository) {
+    public SlingWebConsoleSecurityProvider(
+            @NotNull final BundleContext bundleContext, @NotNull final Object repository) {
+        super(bundleContext);
         this.repository = (Repository) repository;
     }
 
-    // ---------- SCR integration
+    /**
+     * Handle configuration
+     * @see org.osgi.service.cm.ManagedService#updated(java.util.Dictionary)
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public void updated(@Nullable Dictionary<String, ?> properties) throws ConfigurationException {
+        final Converter converter = Converters.standardConverter();
+        this.users = converter
+                .convert(properties == null ? null : properties.get(PROP_USERS))
+                .defaultValue(PROP_DEFAULT_USERS)
+                .to(Set.class);
+        this.groups = converter
+                .convert(properties == null ? null : properties.get(PROP_GROUPS))
+                .defaultValue(PROP_DEFAULT_GROUPS)
+                .to(Set.class);
+    }
 
     /**
      * Authenticates and authorizes the user identified by the user name and
@@ -77,26 +118,25 @@ public class SlingWebConsoleSecurityProvider extends AbstractWebConsoleSecurityP
      * @param password The password to authenticate the user. This may be
      *            <code>null</code> to assume an empty password.
      * @return The <code>userName</code> is currently returned to indicate
-     *         successfull authentication.
+     *         successful authentication.
      * @throws NullPointerException if <code>userName</code> is
      *             <code>null</code>.
      */
     @Override
-    public Object authenticate(String userName, String password) {
+    public @Nullable Object authenticate(@NotNull String userName, @Nullable String password) {
         final Credentials creds =
                 new SimpleCredentials(userName, (password == null) ? new char[0] : password.toCharArray());
         Session session = null;
         try {
             session = repository.login(creds);
-            if (session instanceof JackrabbitSession) {
-                UserManager umgr = ((JackrabbitSession) session).getUserManager();
+            if (session instanceof JackrabbitSession jrSession) {
+                UserManager umgr = jrSession.getUserManager();
                 String userId = session.getUserID();
                 Authorizable a = umgr.getAuthorizable(userId);
                 if (a instanceof User) {
-
                     // check users
                     if (users.contains(userId)) {
-                        return true;
+                        return userName;
                     }
 
                     // check groups
@@ -134,15 +174,5 @@ public class SlingWebConsoleSecurityProvider extends AbstractWebConsoleSecurityP
 
         // no success (see log)
         return null;
-    }
-
-    /**
-     * All users authenticated with the repository and being a member of the
-     * authorized groups are granted access for all roles in the Web Console.
-     */
-    @Override
-    public boolean authorize(Object user, String role) {
-        logger.debug("authorize: Grant user {} access for role {}", user, role);
-        return true;
     }
 }
