@@ -114,8 +114,7 @@ public class SlingWebConsoleSecurityProvider2 implements SecurityProvider, Manag
     public @Nullable Object authenticate(
             @NotNull final HttpServletRequest request, @NotNull final HttpServletResponse response) {
         try {
-            if (this.authentiationSupport.handleSecurity(
-                    request, response)) { // TODO: should this call authenticationSupport#finishSecurity at the end?
+            if (this.authentiationSupport.handleSecurity(request, response)) {
                 // get ResourceResolver (set by AuthenticationSupport)
                 Object resolverObject = request.getAttribute(AuthenticationSupport.REQUEST_ATTRIBUTE_RESOLVER);
                 if (resolverObject instanceof ResourceResolver resolver) {

@@ -24,7 +24,11 @@ import java.util.Set;
 /**
  * This is the common constants for the two provider implementations.
  */
-public interface ConfigConstants {
+class ConfigConstants {
+
+    private ConfigConstants() {
+        /* This utility class should not be instantiated */
+    }
 
     // name of the property providing list of authorized users
     static final String PROP_USERS = "users";
