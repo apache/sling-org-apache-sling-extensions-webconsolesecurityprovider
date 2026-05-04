@@ -18,8 +18,10 @@
  */
 package org.apache.sling.extensions.webconsolesecurityprovider.internal;
 
+import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.Objects;
 
 import org.apache.felix.webconsole.spi.SecurityProvider;
 import org.osgi.framework.BundleContext;
@@ -30,6 +32,9 @@ import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.ManagedService;
+import org.osgi.service.http.context.ServletContextHelper;
+import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
+import org.osgi.util.converter.Converters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,15 +188,40 @@ public class ServicesListener {
         }
     }
 
+    /**
+     * SLING-13178 resolves the context path of the "org.apache.sling" servlet context
+     *
+     * @return the resolved context path or empty string otherwise
+     */
+    private String resolveSlingServletContextPath() {
+        Object value = null;
+        Collection<ServiceReference<ServletContextHelper>> serviceReferences;
+        try {
+            String filter =
+                    String.format("(%s=org.apache.sling)", HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_NAME);
+            serviceReferences = bundleContext.getServiceReferences(ServletContextHelper.class, filter);
+            value = serviceReferences.stream()
+                    .map(sr -> sr.getProperty(HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH))
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        } catch (InvalidSyntaxException e) {
+            // should never get here
+            logger.warn("Failed to get servlet context helper", e);
+        }
+        return Converters.standardConverter().convert(value).defaultValue("").to(String.class);
+    }
+
     private void registerProviderSling(final Object authSupport, final Object authenticator) {
         final Dictionary<String, Object> props = new Hashtable<>();
         props.put(Constants.SERVICE_PID, SlingWebConsoleSecurityProvider.class.getName());
         props.put(Constants.SERVICE_DESCRIPTION, "Apache Sling Web Console Security Provider 2");
         props.put(Constants.SERVICE_VENDOR, "The Apache Software Foundation");
         props.put("webconsole.security.provider.id", "org.apache.sling.extensions.webconsolesecurityprovider2");
+        final String slingServletContextPath = resolveSlingServletContextPath();
         this.provider2Reg = this.bundleContext.registerService(
                 new String[] {ManagedService.class.getName(), SecurityProvider.class.getName()},
-                new SlingWebConsoleSecurityProvider2(authSupport, authenticator),
+                new SlingWebConsoleSecurityProvider2(authSupport, authenticator, slingServletContextPath),
                 props);
     }
 

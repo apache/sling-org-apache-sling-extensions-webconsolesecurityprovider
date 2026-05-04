@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.felix.webconsole.spi.SecurityProvider;
 import org.apache.jackrabbit.api.JackrabbitSession;
@@ -74,9 +75,13 @@ public class SlingWebConsoleSecurityProvider2 implements SecurityProvider, Manag
 
     private final Authenticator authenticator;
 
-    public SlingWebConsoleSecurityProvider2(@NotNull final Object support, @NotNull final Object authenticator) {
+    private String slingContextPath;
+
+    public SlingWebConsoleSecurityProvider2(
+            @NotNull final Object support, @NotNull final Object authenticator, String slingContextPath) {
         this.authentiationSupport = (AuthenticationSupport) support;
         this.authenticator = (Authenticator) authenticator;
+        this.slingContextPath = slingContextPath;
     }
 
     /**
@@ -176,6 +181,16 @@ public class SlingWebConsoleSecurityProvider2 implements SecurityProvider, Manag
 
     @Override
     public void logout(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response) {
-        this.authenticator.logout(request, response);
+        // SLING-13178 - we want the context path to be whatever was used to login
+        //   to ensure the sling.formauth cookie using the same "path" value when
+        //   clearing the cookie
+        HttpServletRequest wrappedRequest = new HttpServletRequestWrapper(request) {
+            @Override
+            public String getContextPath() {
+                return slingContextPath;
+            }
+        };
+
+        this.authenticator.logout(wrappedRequest, response);
     }
 }

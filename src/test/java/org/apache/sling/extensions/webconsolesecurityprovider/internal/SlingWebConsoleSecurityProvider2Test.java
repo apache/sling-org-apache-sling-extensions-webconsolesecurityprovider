@@ -67,7 +67,7 @@ public class SlingWebConsoleSecurityProvider2Test {
     public void before() {
         support = Mockito.mock(AuthenticationSupport.class);
         authenticator = Mockito.mock(Authenticator.class);
-        provider = new SlingWebConsoleSecurityProvider2(support, authenticator);
+        provider = new SlingWebConsoleSecurityProvider2(support, authenticator, "");
     }
 
     /**
