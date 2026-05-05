@@ -18,19 +18,21 @@
  */
 package org.apache.sling.extensions.webconsolesecurityprovider.internal;
 
-import org.apache.sling.testing.mock.osgi.junit.OsgiContext;
+import org.apache.sling.testing.mock.osgi.junit5.OsgiContext;
+import org.apache.sling.testing.mock.osgi.junit5.OsgiContextExtension;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.Test.None;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.osgi.framework.BundleContext;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
  *
  */
-public class ActivatorTest {
+@ExtendWith(OsgiContextExtension.class)
+class ActivatorTest {
 
-    @Rule
     public OsgiContext context = new OsgiContext();
 
     private Activator activator = new Activator();
@@ -38,26 +40,26 @@ public class ActivatorTest {
     /**
      * Test method for {@link org.apache.sling.extensions.webconsolesecurityprovider.internal.Activator#start(org.osgi.framework.BundleContext)}.
      */
-    @Test(expected = None.class)
-    public void testStart() throws Exception {
+    @Test
+    void testStart() {
         final @NotNull BundleContext bundleContext = context.bundleContext();
-        activator.start(bundleContext);
+        assertDoesNotThrow(() -> activator.start(bundleContext));
     }
 
     /**
      * Test method for {@link org.apache.sling.extensions.webconsolesecurityprovider.internal.Activator#stop(org.osgi.framework.BundleContext)}.
      */
-    @Test(expected = None.class)
-    public void testStop() throws Exception {
+    @Test
+    void testStop() throws Exception {
         final @NotNull BundleContext bundleContext = context.bundleContext();
 
         // start
         activator.start(bundleContext);
 
         // stop
-        activator.stop(bundleContext);
+        assertDoesNotThrow(() -> activator.stop(bundleContext));
 
         // stop one more time for code coverage
-        activator.stop(bundleContext);
+        assertDoesNotThrow(() -> activator.stop(bundleContext));
     }
 }

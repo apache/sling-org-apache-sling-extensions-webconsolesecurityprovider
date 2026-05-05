@@ -23,21 +23,22 @@ import javax.jcr.Repository;
 import org.apache.felix.webconsole.spi.SecurityProvider;
 import org.apache.sling.api.auth.Authenticator;
 import org.apache.sling.auth.core.AuthenticationSupport;
-import org.apache.sling.testing.mock.osgi.junit.OsgiContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.apache.sling.testing.mock.osgi.junit5.OsgiContext;
+import org.apache.sling.testing.mock.osgi.junit5.OsgiContextExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ServiceListenerTest {
+@ExtendWith(OsgiContextExtension.class)
+class ServiceListenerTest {
 
-    @Rule
     public OsgiContext context = new OsgiContext();
 
     @Mock
@@ -51,20 +52,20 @@ public class ServiceListenerTest {
 
     ServicesListener listener;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         MockitoAnnotations.openMocks(this);
     }
 
-    @After
-    public void shutdown() {
+    @AfterEach
+    void shutdown() {
         if (listener != null) {
             listener.deactivate();
         }
     }
 
     @Test
-    public void testDefaultAuth() {
+    void testDefaultAuth() {
         listener = new ServicesListener(context.bundleContext());
         assertNoSecurityProviderRegistered();
 
@@ -82,7 +83,7 @@ public class ServiceListenerTest {
     }
 
     @Test
-    public void testWithSlingAuth() {
+    void testWithSlingAuth() {
         try {
             System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.SLING_AUTH);
             listener = new ServicesListener(context.bundleContext());
@@ -105,7 +106,7 @@ public class ServiceListenerTest {
     }
 
     @Test
-    public void testWithForcedJcrAuth() {
+    void testWithForcedJcrAuth() {
         try {
             System.setProperty(ServicesListener.WEBCONSOLE_AUTH_TYPE, ServicesListener.JCR_AUTH);
             listener = new ServicesListener(context.bundleContext());
@@ -130,7 +131,7 @@ public class ServiceListenerTest {
     }
 
     @Test
-    public void testGetAuthType() {
+    void testGetAuthType() {
         try {
             listener = new ServicesListener(context.bundleContext());
             assertEquals(ServicesListener.AuthType.DEFAULT, listener.getAuthType());
@@ -152,7 +153,7 @@ public class ServiceListenerTest {
     }
 
     @Test
-    public void testGetTargetState() {
+    void testGetTargetState() {
         try {
             listener = new ServicesListener(context.bundleContext());
             assertEquals(ServicesListener.State.NONE, listener.getTargetState(false, false));
@@ -182,14 +183,14 @@ public class ServiceListenerTest {
 
     private void assertRepositoryRegistered() {
         assertTrue(
-                "Expected to have the repository registered",
-                getSecurityProvider() instanceof SlingWebConsoleSecurityProvider);
+                getSecurityProvider() instanceof SlingWebConsoleSecurityProvider,
+                "Expected to have the repository registered");
     }
 
     private void assertSlingAuthRegistered() {
         assertTrue(
-                "Expected to have SlingAuth registered",
-                getSecurityProvider() instanceof SlingWebConsoleSecurityProvider2);
+                getSecurityProvider() instanceof SlingWebConsoleSecurityProvider2,
+                "Expected to have SlingAuth registered");
     }
 
     private void assertNoSecurityProviderRegistered() {

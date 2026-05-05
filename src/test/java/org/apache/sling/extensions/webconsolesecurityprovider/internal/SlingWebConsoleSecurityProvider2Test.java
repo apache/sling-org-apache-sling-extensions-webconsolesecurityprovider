@@ -36,26 +36,30 @@ import org.apache.sling.api.auth.Authenticator;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.auth.core.AuthenticationSupport;
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
-import org.apache.sling.testing.mock.sling.junit.SlingContext;
+import org.apache.sling.testing.mock.sling.junit5.SlingContext;
+import org.apache.sling.testing.mock.sling.junit5.SlingContextExtension;
 import org.apache.sling.testing.mock.sling.servlet.MockSlingJakartaHttpServletRequest;
 import org.apache.sling.testing.mock.sling.servlet.MockSlingJakartaHttpServletResponse;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.osgi.service.cm.ConfigurationException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.withSettings;
 
 /**
  *
  */
-public class SlingWebConsoleSecurityProvider2Test {
+@ExtendWith(SlingContextExtension.class)
+class SlingWebConsoleSecurityProvider2Test {
 
-    @Rule
     public SlingContext context = new SlingContext(ResourceResolverType.JCR_MOCK);
 
     private SlingWebConsoleSecurityProvider2 provider;
@@ -63,8 +67,8 @@ public class SlingWebConsoleSecurityProvider2Test {
     private AuthenticationSupport support;
     private Authenticator authenticator;
 
-    @Before
-    public void before() {
+    @BeforeEach
+    void before() {
         support = Mockito.mock(AuthenticationSupport.class);
         authenticator = Mockito.mock(Authenticator.class);
         provider = new SlingWebConsoleSecurityProvider2(support, authenticator, "");
@@ -74,7 +78,7 @@ public class SlingWebConsoleSecurityProvider2Test {
      * Test method for {@link org.apache.sling.extensions.webconsolesecurityprovider.internal.SlingWebConsoleSecurityProvider2#updated(java.util.Dictionary)}.
      */
     @Test
-    public void testUpdated() throws ConfigurationException {
+    void testUpdated() throws ConfigurationException {
         provider.updated(null);
         assertEquals(ConfigConstants.PROP_DEFAULT_USERS, provider.users);
         assertEquals(ConfigConstants.PROP_DEFAULT_GROUPS, provider.groups);
@@ -97,7 +101,7 @@ public class SlingWebConsoleSecurityProvider2Test {
      * Test method for {@link org.apache.sling.extensions.webconsolesecurityprovider.internal.SlingWebConsoleSecurityProvider2#authenticate(jakarta.servlet.http.HttpServletRequest, jakarta.servlet.http.HttpServletResponse)}.
      */
     @Test
-    public void testAuthenticate() throws RepositoryException, ConfigurationException {
+    void testAuthenticate() throws RepositoryException, ConfigurationException {
         final @NotNull MockSlingJakartaHttpServletRequest request = context.jakartaRequest();
         final @NotNull MockSlingJakartaHttpServletResponse response = context.jakartaResponse();
 
@@ -155,7 +159,7 @@ public class SlingWebConsoleSecurityProvider2Test {
     }
 
     @Test
-    public void testAuthenticateWithNoSession() {
+    void testAuthenticateWithNoSession() {
         final @NotNull MockSlingJakartaHttpServletRequest request = context.jakartaRequest();
         final @NotNull MockSlingJakartaHttpServletResponse response = context.jakartaResponse();
 
@@ -176,7 +180,7 @@ public class SlingWebConsoleSecurityProvider2Test {
     }
 
     @Test
-    public void testAuthenticateWithCaughtException() throws RepositoryException {
+    void testAuthenticateWithCaughtException() throws RepositoryException {
         final @NotNull MockSlingJakartaHttpServletRequest request = context.jakartaRequest();
         final @NotNull MockSlingJakartaHttpServletResponse response = context.jakartaResponse();
 
@@ -202,7 +206,7 @@ public class SlingWebConsoleSecurityProvider2Test {
     }
 
     @Test
-    public void testAuthenticateWithoutJackrabbitSession() throws RepositoryException {
+    void testAuthenticateWithoutJackrabbitSession() throws RepositoryException {
         final Session mockSession = Mockito.mock(Session.class);
         Mockito.doReturn("test1").when(mockSession).getUserID();
         assertNull(provider.authenticate(mockSession));
@@ -211,18 +215,18 @@ public class SlingWebConsoleSecurityProvider2Test {
     /**
      * Test method for {@link org.apache.sling.extensions.webconsolesecurityprovider.internal.SlingWebConsoleSecurityProvider2#logout(jakarta.servlet.http.HttpServletRequest, jakarta.servlet.http.HttpServletResponse)}.
      */
-    @Test(expected = org.junit.Test.None.class)
-    public void testLogout() {
+    @Test
+    void testLogout() {
         final @NotNull MockSlingJakartaHttpServletRequest request = context.jakartaRequest();
         final @NotNull MockSlingJakartaHttpServletResponse response = context.jakartaResponse();
-        provider.logout(request, response);
+        assertDoesNotThrow(() -> provider.logout(request, response));
     }
 
     /**
      * Test method for {@link org.apache.sling.extensions.webconsolesecurityprovider.internal.SlingWebConsoleSecurityProvider2#authorize(java.lang.Object, java.lang.String)}.
      */
     @Test
-    public void testAuthorize() {
+    void testAuthorize() {
         assertTrue(provider.authorize("testuser1", "role1"));
     }
 }

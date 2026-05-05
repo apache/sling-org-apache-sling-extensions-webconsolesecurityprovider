@@ -33,30 +33,32 @@ import org.apache.jackrabbit.api.security.user.Group;
 import org.apache.jackrabbit.api.security.user.User;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.sling.testing.mock.sling.ResourceResolverType;
-import org.apache.sling.testing.mock.sling.junit.SlingContext;
+import org.apache.sling.testing.mock.sling.junit5.SlingContext;
+import org.apache.sling.testing.mock.sling.junit5.SlingContextExtension;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.osgi.service.cm.ConfigurationException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 
 /**
  *
  */
-public class SlingWebConsoleSecurityProviderTest {
+@ExtendWith(SlingContextExtension.class)
+class SlingWebConsoleSecurityProviderTest {
 
-    @Rule
     public SlingContext context = new SlingContext(ResourceResolverType.JCR_MOCK);
 
     private Repository mockRepo;
     private SlingWebConsoleSecurityProvider provider;
 
-    @Before
-    public void before() {
+    @BeforeEach
+    void before() {
         mockRepo = Mockito.spy(context.resourceResolver().adaptTo(Session.class).getRepository());
         provider = new SlingWebConsoleSecurityProvider(context.bundleContext(), mockRepo);
     }
@@ -65,7 +67,7 @@ public class SlingWebConsoleSecurityProviderTest {
      * Test method for {@link org.apache.sling.extensions.webconsolesecurityprovider.internal.SlingWebConsoleSecurityProvider#updated(java.util.Dictionary)}.
      */
     @Test
-    public void testUpdated() throws ConfigurationException {
+    void testUpdated() throws ConfigurationException {
         provider.updated(null);
         assertEquals(ConfigConstants.PROP_DEFAULT_USERS, provider.users);
         assertEquals(ConfigConstants.PROP_DEFAULT_GROUPS, provider.groups);
@@ -88,7 +90,7 @@ public class SlingWebConsoleSecurityProviderTest {
      * Test method for {@link org.apache.sling.extensions.webconsolesecurityprovider.internal.SlingWebConsoleSecurityProvider#authenticate(java.lang.String, java.lang.String)}.
      */
     @Test
-    public void testAuthenticate() throws RepositoryException, ConfigurationException {
+    void testAuthenticate() throws RepositoryException, ConfigurationException {
         // user does not exist
         assertNull(provider.authenticate("test1", "test1"));
 
@@ -124,7 +126,7 @@ public class SlingWebConsoleSecurityProviderTest {
     }
 
     @Test
-    public void testAuthenticateWithoutJackrabbitSession() throws RepositoryException {
+    void testAuthenticateWithoutJackrabbitSession() throws RepositoryException {
         // simulate the login return some non-jackrabbit session impl
         final Session mockSession = Mockito.mock(Session.class);
         Mockito.doReturn(mockSession).when(mockRepo).login(any(Credentials.class));
@@ -134,7 +136,7 @@ public class SlingWebConsoleSecurityProviderTest {
     }
 
     @Test
-    public void testAuthenticateWithLoginException() throws RepositoryException {
+    void testAuthenticateWithLoginException() throws RepositoryException {
         // simulate the login throwing an exception
         Mockito.doThrow(LoginException.class).when(mockRepo).login(any(Credentials.class));
 
@@ -143,7 +145,7 @@ public class SlingWebConsoleSecurityProviderTest {
     }
 
     @Test
-    public void testAuthenticateWithOtherException() throws RepositoryException {
+    void testAuthenticateWithOtherException() throws RepositoryException {
         // simulate the login throwing an exception
         Mockito.doThrow(RuntimeException.class).when(mockRepo).login(any(Credentials.class));
 
