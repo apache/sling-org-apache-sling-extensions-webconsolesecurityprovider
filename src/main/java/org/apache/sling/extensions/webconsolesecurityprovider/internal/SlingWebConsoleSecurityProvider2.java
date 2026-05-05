@@ -75,10 +75,10 @@ public class SlingWebConsoleSecurityProvider2 implements SecurityProvider, Manag
 
     private final Authenticator authenticator;
 
-    private String slingContextPath;
+    private final String slingContextPath;
 
     public SlingWebConsoleSecurityProvider2(
-            @NotNull final Object support, @NotNull final Object authenticator, String slingContextPath) {
+            @NotNull final Object support, @NotNull final Object authenticator, @NotNull String slingContextPath) {
         this.authentiationSupport = (AuthenticationSupport) support;
         this.authenticator = (Authenticator) authenticator;
         this.slingContextPath = slingContextPath;

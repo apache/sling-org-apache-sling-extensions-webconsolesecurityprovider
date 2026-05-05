@@ -24,6 +24,7 @@ import java.util.Hashtable;
 import java.util.Objects;
 
 import org.apache.felix.webconsole.spi.SecurityProvider;
+import org.jetbrains.annotations.NotNull;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
@@ -193,7 +194,7 @@ public class ServicesListener {
      *
      * @return the resolved context path or empty string otherwise
      */
-    private String resolveSlingServletContextPath() {
+    private @NotNull String resolveSlingServletContextPath() {
         Object value = null;
         Collection<ServiceReference<ServletContextHelper>> serviceReferences;
         try {
